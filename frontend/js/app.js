@@ -14,6 +14,15 @@ let rlChoice = 'red';
 let towersDiff = 'easy';
 let plinkoRisk = 'low';
 
+// Valid pages for URL routing
+const VALID_PAGES = ['home', 'coinflip', 'crash', 'mines', 'towers', 'plinko', 'roulette', 'blackjack', 'history', 'withdraw', 'fairness'];
+
+function getPageFromURL() {
+  const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
+  if (!path || path === 'index.html') return 'home';
+  return VALID_PAGES.includes(path) ? path : 'home';
+}
+
 // --- Init ---
 document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('gr_token');
@@ -38,6 +47,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   renderPlinkoBuckets();
   renderMinesGrid();
+
+  // Navigate to page from URL
+  const initialPage = getPageFromURL();
+  if (initialPage !== 'home') {
+    navigate(initialPage, false);
+  }
+});
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', () => {
+  const page = getPageFromURL();
+  navigate(page, false);
 });
 
 function showAuth() {
@@ -109,7 +130,7 @@ function doLogout() {
 }
 
 // --- Navigation ---
-function navigate(page) {
+function navigate(page, pushState = true) {
   currentPage = page;
   document.querySelectorAll('.game-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -120,9 +141,34 @@ function navigate(page) {
   const navItem = document.querySelector(`.nav-item[data-page="${page}"]`);
   if (navItem) navItem.classList.add('active');
 
+  // Update URL
+  if (pushState) {
+    const url = page === 'home' ? '/' : '/' + page;
+    history.pushState({ page }, '', url);
+  }
+
+  // Update page title
+  const titles = {
+    home: 'GemRush — Casino',
+    coinflip: 'Coin Flip — GemRush',
+    crash: 'Crash — GemRush',
+    mines: 'Mines — GemRush',
+    towers: 'Towers — GemRush',
+    plinko: 'Plinko — GemRush',
+    roulette: 'Roulette — GemRush',
+    blackjack: 'Blackjack — GemRush',
+    history: 'Bet History — GemRush',
+    withdraw: 'Withdraw — GemRush',
+    fairness: 'Provably Fair — GemRush'
+  };
+  document.title = titles[page] || 'GemRush — Casino';
+
   // Close mobile sidebar
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('sidebar-overlay').classList.remove('open');
+
+  // Scroll to top
+  window.scrollTo(0, 0);
 
   // Load data for certain pages
   if (page === 'history') loadHistory();
