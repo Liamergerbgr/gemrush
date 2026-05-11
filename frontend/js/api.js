@@ -1,5 +1,5 @@
 // GemRush API Client
-const API_BASE = ''; // Set to your Workers URL, e.g. https://gemrush-api.your-subdomain.workers.dev
+const API_BASE = 'https://gemrush-api.taskautomateai.workers.dev';
 
 class GemRushAPI {
   constructor() {
