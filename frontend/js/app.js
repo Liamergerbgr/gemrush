@@ -16,10 +16,12 @@ let plinkoRisk = 'low';
 
 // Valid pages for URL routing
 const VALID_PAGES = ['home', 'coinflip', 'crash', 'mines', 'towers', 'plinko', 'roulette', 'blackjack', 'history', 'withdraw', 'fairness'];
+const AUTH_PAGES = ['login', 'register'];
 
 function getPageFromURL() {
   const path = window.location.pathname.replace(/^\/+|\/+$/g, '');
   if (!path || path === 'index.html') return 'home';
+  if (AUTH_PAGES.includes(path)) return path;
   return VALID_PAGES.includes(path) ? path : 'home';
 }
 
@@ -28,6 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const token = localStorage.getItem('gr_token');
   const savedUser = localStorage.getItem('gr_user');
 
+  const initialPage = getPageFromURL();
+
   if (token && savedUser) {
     try {
       currentUser = JSON.parse(savedUser);
@@ -35,35 +39,53 @@ document.addEventListener('DOMContentLoaded', async () => {
       const me = await api.getMe();
       currentUser = { ...currentUser, ...me };
       userBalance = me.balance || 0;
-      showApp();
+      // If logged in but on auth page, redirect to home
+      if (AUTH_PAGES.includes(initialPage)) {
+        showApp();
+        navigate('home', true);
+      } else {
+        showApp();
+        if (initialPage !== 'home') navigate(initialPage, false);
+      }
     } catch {
       localStorage.removeItem('gr_token');
       localStorage.removeItem('gr_user');
-      showAuth();
+      showAuth(initialPage);
     }
   } else {
-    showAuth();
+    showAuth(initialPage);
   }
 
   renderPlinkoBuckets();
   renderMinesGrid();
-
-  // Navigate to page from URL
-  const initialPage = getPageFromURL();
-  if (initialPage !== 'home') {
-    navigate(initialPage, false);
-  }
 });
 
 // Handle browser back/forward buttons
 window.addEventListener('popstate', () => {
   const page = getPageFromURL();
-  navigate(page, false);
+  if (AUTH_PAGES.includes(page)) {
+    if (!currentUser) {
+      showAuth(page);
+    } else {
+      navigate('home', true);
+    }
+  } else {
+    if (!currentUser) {
+      showAuth('login');
+    } else {
+      navigate(page, false);
+    }
+  }
 });
 
-function showAuth() {
+function showAuth(page) {
   document.getElementById('auth-screen').classList.remove('hidden');
   document.getElementById('app-screen').classList.add('hidden');
+  if (page === 'register') {
+    showRegister();
+  } else {
+    showLogin();
+  }
 }
 
 function showApp() {
@@ -72,16 +94,25 @@ function showApp() {
   updateBalance(userBalance);
   document.getElementById('user-name').textContent = currentUser?.username || 'User';
   document.getElementById('user-avatar').textContent = (currentUser?.username || '?')[0].toUpperCase();
+  // If on an auth URL, redirect to home
+  const page = getPageFromURL();
+  if (AUTH_PAGES.includes(page)) {
+    navigate('home', true);
+  }
 }
 
 function showLogin() {
   document.getElementById('login-form').classList.remove('hidden');
   document.getElementById('register-form').classList.add('hidden');
+  history.pushState({ page: 'login' }, '', '/login');
+  document.title = 'Login — GemRush';
 }
 
 function showRegister() {
   document.getElementById('login-form').classList.add('hidden');
   document.getElementById('register-form').classList.remove('hidden');
+  history.pushState({ page: 'register' }, '', '/register');
+  document.title = 'Register — GemRush';
 }
 
 // --- Auth ---
@@ -126,7 +157,7 @@ async function doRegister() {
 function doLogout() {
   api.logout();
   currentUser = null;
-  showAuth();
+  showAuth('login');
 }
 
 // --- Navigation ---
