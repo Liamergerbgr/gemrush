@@ -115,6 +115,9 @@
         <span class="icon">&#10005;</span> Logout
       </div>
     </nav>
+    <div class="sidebar-footer">
+      <p>&#128274; All games provably fair<br>SHA-256 verified outcomes</p>
+    </div>
   </aside>
 
   <!-- Main -->
@@ -139,50 +142,73 @@
 
       <!-- HOME -->
       <div class="game-panel active" id="page-home">
-        <h2 class="page-title">Games</h2>
+        <div class="home-welcome">
+          <h2>Choose Your Game</h2>
+          <p>All games are provably fair with a 5% house edge. Your results can be independently verified.</p>
+        </div>
         <div class="games-grid">
-          <div class="game-card" onclick="navigate('coinflip')">
-            <div class="game-edge">1.90x</div>
-            <div class="game-icon">&#9898;</div>
-            <div class="game-name">Coin Flip</div>
-            <div class="game-desc">Heads or Tails — 50/50</div>
+          <div class="game-card" data-game="coinflip" onclick="navigate('coinflip')">
+            <div class="game-card-inner">
+              <div class="game-icon">&#129689;</div>
+              <div class="game-name">Coin Flip</div>
+              <div class="game-desc">Heads or Tails &mdash; 50/50</div>
+              <div class="game-edge">Up to 1.90x</div>
+            </div>
           </div>
-          <div class="game-card" onclick="navigate('crash')">
-            <div class="game-edge">&#8734;x</div>
-            <div class="game-icon">&#128200;</div>
-            <div class="game-name">Crash</div>
-            <div class="game-desc">Cash out before it crashes</div>
+          <div class="game-card" data-game="crash" onclick="navigate('crash')">
+            <div class="game-card-inner">
+              <div class="game-icon">&#128200;</div>
+              <div class="game-name">Crash</div>
+              <div class="game-desc">Cash out before it crashes</div>
+              <div class="game-edge">Unlimited x</div>
+            </div>
           </div>
-          <div class="game-card" onclick="navigate('mines')">
-            <div class="game-edge">&#8734;x</div>
-            <div class="game-icon">&#128163;</div>
-            <div class="game-name">Mines</div>
-            <div class="game-desc">Avoid the mines</div>
+          <div class="game-card" data-game="mines" onclick="navigate('mines')">
+            <div class="game-card-inner">
+              <div class="game-icon">&#128163;</div>
+              <div class="game-name">Mines</div>
+              <div class="game-desc">Reveal gems, avoid mines</div>
+              <div class="game-edge">Unlimited x</div>
+            </div>
           </div>
-          <div class="game-card" onclick="navigate('towers')">
-            <div class="game-edge">&#8734;x</div>
-            <div class="game-icon">&#127961;</div>
-            <div class="game-name">Towers</div>
-            <div class="game-desc">Climb to the top</div>
+          <div class="game-card" data-game="towers" onclick="navigate('towers')">
+            <div class="game-card-inner">
+              <div class="game-icon">&#127961;</div>
+              <div class="game-name">Towers</div>
+              <div class="game-desc">Climb floors to multiply</div>
+              <div class="game-edge">Unlimited x</div>
+            </div>
           </div>
-          <div class="game-card" onclick="navigate('plinko')">
-            <div class="game-edge">110x</div>
-            <div class="game-icon">&#9679;</div>
-            <div class="game-name">Plinko</div>
-            <div class="game-desc">Drop the ball</div>
+          <div class="game-card" data-game="plinko" onclick="navigate('plinko')">
+            <div class="game-card-inner">
+              <div class="game-icon">&#9679;</div>
+              <div class="game-name">Plinko</div>
+              <div class="game-desc">Drop the ball, hit big</div>
+              <div class="game-edge">Up to 110x</div>
+            </div>
           </div>
-          <div class="game-card" onclick="navigate('roulette')">
-            <div class="game-edge">14x</div>
-            <div class="game-icon">&#127922;</div>
-            <div class="game-name">Roulette</div>
-            <div class="game-desc">Red, Black, or Green</div>
+          <div class="game-card" data-game="roulette" onclick="navigate('roulette')">
+            <div class="game-card-inner">
+              <div class="game-icon">&#127922;</div>
+              <div class="game-name">Roulette</div>
+              <div class="game-desc">Red, Black, or Green</div>
+              <div class="game-edge">Up to 14x</div>
+            </div>
           </div>
-          <div class="game-card" onclick="navigate('blackjack')">
-            <div class="game-edge">2.5x</div>
-            <div class="game-icon">&#127183;</div>
-            <div class="game-name">Blackjack</div>
-            <div class="game-desc">Beat the dealer</div>
+          <div class="game-card" data-game="blackjack" onclick="navigate('blackjack')">
+            <div class="game-card-inner">
+              <div class="game-icon">&#127183;</div>
+              <div class="game-name">Blackjack</div>
+              <div class="game-desc">Beat the dealer to 21</div>
+              <div class="game-edge">Up to 2.5x</div>
+            </div>
           </div>
+        </div>
+        <div class="trust-bar">
+          <div class="trust-item"><span class="trust-icon">&#128274;</span> Provably Fair</div>
+          <div class="trust-item"><span class="trust-icon">&#9889;</span> Instant Payouts</div>
+          <div class="trust-item"><span class="trust-icon">&#128737;</span> SHA-256 Verified</div>
+          <div class="trust-item"><span class="trust-icon">&#128142;</span> Virtual Currency Only</div>
         </div>
       </div>
 
@@ -486,26 +512,50 @@
       <!-- PROVABLY FAIR -->
       <div class="game-panel" id="page-fairness">
         <h2 class="page-title">Provably Fair</h2>
-        <div style="max-width:600px;">
-          <p class="text-secondary mb-16" style="line-height:1.6;">
-            Every game on GemRush uses a provably fair system. Before each bet, a server seed is generated and its SHA-256 hash is shown to you.
-            After the bet, the full server seed is revealed so you can verify the result was not tampered with.
-          </p>
-          <h3 style="font-size:1rem;margin-bottom:12px;">Verify a Bet</h3>
-          <div class="form-group">
-            <label>Server Seed</label>
-            <input type="text" id="pf-server-seed" placeholder="Revealed after bet">
+        <div class="pf-container">
+          <div class="pf-hero">
+            <h3>&#128274; What is Provably Fair?</h3>
+            <p>
+              Provably fair is a cryptographic system that guarantees every game result on GemRush is predetermined and cannot be manipulated.
+              Before you place a bet, a server seed is generated and locked using SHA-256 hashing. You can verify after every bet that the result was fair.
+            </p>
+            <div class="pf-steps">
+              <div class="pf-step">
+                <div class="step-num">1</div>
+                <div class="step-title">Before Bet</div>
+                <div class="step-desc">Server generates a secret seed and shows you its SHA-256 hash as proof</div>
+              </div>
+              <div class="pf-step">
+                <div class="step-num">2</div>
+                <div class="step-title">Game Plays</div>
+                <div class="step-desc">Result is calculated using HMAC-SHA256 of server seed + client seed + nonce</div>
+              </div>
+              <div class="pf-step">
+                <div class="step-num">3</div>
+                <div class="step-title">After Bet</div>
+                <div class="step-desc">Server seed is revealed. Hash it yourself to confirm it matches the pre-bet hash</div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>Client Seed</label>
-            <input type="text" id="pf-client-seed" placeholder="Auto-generated">
+
+          <div class="pf-verify-box">
+            <h3>Verify a Bet</h3>
+            <p class="text-secondary mb-16" style="font-size:0.85rem;">Enter the seeds from any completed bet to independently verify the result.</p>
+            <div class="form-group">
+              <label>Server Seed</label>
+              <input type="text" id="pf-server-seed" placeholder="Revealed after each bet">
+            </div>
+            <div class="form-group">
+              <label>Client Seed</label>
+              <input type="text" id="pf-client-seed" placeholder="Auto-generated per bet">
+            </div>
+            <div class="form-group">
+              <label>Nonce</label>
+              <input type="number" id="pf-nonce" placeholder="Timestamp nonce from bet">
+            </div>
+            <button class="btn btn-primary" onclick="verifyFairness()" style="width:auto;padding:12px 32px;">Verify Result</button>
+            <div id="pf-result" class="mt-16"></div>
           </div>
-          <div class="form-group">
-            <label>Nonce</label>
-            <input type="number" id="pf-nonce" placeholder="Timestamp nonce">
-          </div>
-          <button class="btn btn-secondary" onclick="verifyFairness()" style="width:auto;">Verify</button>
-          <div id="pf-result" class="mt-16"></div>
         </div>
       </div>
 
