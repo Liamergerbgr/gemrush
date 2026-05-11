@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>GemRush — Casino</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Auth Screen -->
+<div id="auth-screen" class="auth-container">
+  <div class="auth-box">
+    <div class="sidebar-logo" style="border:none; margin-bottom:12px;">
+      <h1>GEMRUSH</h1>
+      <span>Provably Fair Casino</span>
+    </div>
+
+    <!-- Login -->
+    <div id="login-form">
+      <h2>Welcome Back</h2>
+      <p class="subtitle">Sign in to play</p>
+      <div class="auth-error" id="login-error"></div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="Your password">
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
+      <div class="auth-switch">Don't have an account? <a onclick="showRegister()">Sign Up</a></div>
+    </div>
+
+    <!-- Register -->
+    <div id="register-form" class="hidden">
+      <h2>Create Account</h2>
+      <p class="subtitle">Join GemRush today</p>
+      <div class="auth-error" id="register-error"></div>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="reg-username" placeholder="Choose a username">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="you@example.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="At least 6 characters">
+      </div>
+      <div class="form-group">
+        <label>Roblox Username (optional)</label>
+        <input type="text" id="reg-roblox" placeholder="Your Roblox username">
+      </div>
+      <button class="btn btn-primary" onclick="doRegister()">Create Account</button>
+      <div class="auth-switch">Already have an account? <a onclick="showLogin()">Sign In</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app-screen" class="app-container hidden">
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <h1>GEMRUSH</h1>
+      <span>Provably Fair</span>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Menu</div>
+      <div class="nav-item active" data-page="home" onclick="navigate('home')">
+        <span class="icon">&#9776;</span> Home
+      </div>
+
+      <div class="nav-section">Games</div>
+      <div class="nav-item" data-page="coinflip" onclick="navigate('coinflip')">
+        <span class="icon">&#9898;</span> Coin Flip
+      </div>
+      <div class="nav-item" data-page="crash" onclick="navigate('crash')">
+        <span class="icon">&#128200;</span> Crash
+      </div>
+      <div class="nav-item" data-page="mines" onclick="navigate('mines')">
+        <span class="icon">&#128163;</span> Mines
+      </div>
+      <div class="nav-item" data-page="towers" onclick="navigate('towers')">
+        <span class="icon">&#127961;</span> Towers
+      </div>
+      <div class="nav-item" data-page="plinko" onclick="navigate('plinko')">
+        <span class="icon">&#9679;</span> Plinko
+      </div>
+      <div class="nav-item" data-page="roulette" onclick="navigate('roulette')">
+        <span class="icon">&#127922;</span> Roulette
+      </div>
+      <div class="nav-item" data-page="blackjack" onclick="navigate('blackjack')">
+        <span class="icon">&#127183;</span> Blackjack
+      </div>
+
+      <div class="nav-section">Account</div>
+      <div class="nav-item" data-page="history" onclick="navigate('history')">
+        <span class="icon">&#128196;</span> Bet History
+      </div>
+      <div class="nav-item" data-page="withdraw" onclick="navigate('withdraw')">
+        <span class="icon">&#128176;</span> Withdraw
+      </div>
+      <div class="nav-item" data-page="fairness" onclick="navigate('fairness')">
+        <span class="icon">&#128274;</span> Provably Fair
+      </div>
+      <div class="nav-item" onclick="doLogout()" style="color:var(--danger)">
+        <span class="icon">&#10005;</span> Logout
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <div class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" onclick="toggleSidebar()">&#9776;</button>
+      </div>
+      <div class="topbar-right">
+        <div class="balance-display">
+          <span class="gem-icon">&#128142;</span>
+          <span class="amount" id="balance-amount">0</span>
+        </div>
+        <div class="user-menu" onclick="navigate('history')">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <span id="user-name" style="font-size:0.85rem;font-weight:600;">User</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="content-area">
+
+      <!-- HOME -->
+      <div class="game-panel active" id="page-home">
+        <h2 class="page-title">Games</h2>
+        <div class="games-grid">
+          <div class="game-card" onclick="navigate('coinflip')">
+            <div class="game-edge">1.90x</div>
+            <div class="game-icon">&#9898;</div>
+            <div class="game-name">Coin Flip</div>
+            <div class="game-desc">Heads or Tails — 50/50</div>
+          </div>
+          <div class="game-card" onclick="navigate('crash')">
+            <div class="game-edge">&#8734;x</div>
+            <div class="game-icon">&#128200;</div>
+            <div class="game-name">Crash</div>
+            <div class="game-desc">Cash out before it crashes</div>
+          </div>
+          <div class="game-card" onclick="navigate('mines')">
+            <div class="game-edge">&#8734;x</div>
+            <div class="game-icon">&#128163;</div>
+            <div class="game-name">Mines</div>
+            <div class="game-desc">Avoid the mines</div>
+          </div>
+          <div class="game-card" onclick="navigate('towers')">
+            <div class="game-edge">&#8734;x</div>
+            <div class="game-icon">&#127961;</div>
+            <div class="game-name">Towers</div>
+            <div class="game-desc">Climb to the top</div>
+          </div>
+          <div class="game-card" onclick="navigate('plinko')">
+            <div class="game-edge">110x</div>
+            <div class="game-icon">&#9679;</div>
+            <div class="game-name">Plinko</div>
+            <div class="game-desc">Drop the ball</div>
+          </div>
+          <div class="game-card" onclick="navigate('roulette')">
+            <div class="game-edge">14x</div>
+            <div class="game-icon">&#127922;</div>
+            <div class="game-name">Roulette</div>
+            <div class="game-desc">Red, Black, or Green</div>
+          </div>
+          <div class="game-card" onclick="navigate('blackjack')">
+            <div class="game-edge">2.5x</div>
+            <div class="game-icon">&#127183;</div>
+            <div class="game-name">Blackjack</div>
+            <div class="game-desc">Beat the dealer</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COIN FLIP -->
+      <div class="game-panel" id="page-coinflip">
+        <h2 class="page-title">Coin Flip</h2>
+        <div class="game-layout">
+          <div class="game-controls">
+            <div class="bet-input-group">
+              <label>Bet Amount</label>
+              <div class="bet-input-wrap">
+                <input type="number" id="cf-amount" min="1" value="10" placeholder="0">
+                <div class="bet-quick-btns">
+                  <button class="bet-quick-btn" onclick="betQuick('cf-amount','half')">&#189;</button>
+                  <button class="bet-quick-btn" onclick="betQuick('cf-amount','2x')">2x</button>
+                  <button class="bet-quick-btn" onclick="betQuick('cf-amount','max')">Max</button>
+                </div>
+              </div>
+            </div>
+            <label style="color:var(--text-secondary);font-size:0.75rem;text-transform:uppercase;font-weight:600;margin-bottom:6px;display:block;">Your Pick</label>
+            <div class="choice-group" id="cf-choice-group">
+              <button class="choice-btn selected" data-choice="heads" onclick="selectChoice('cf', 'heads')">Heads</button>
+              <button class="choice-btn" data-choice="tails" onclick="selectChoice('cf', 'tails')">Tails</button>
+            </div>
+            <div class="info-row">
+              <span class="label">Payout</span>
+              <span class="value text-accent">1.90x</span>
+            </div>
+            <div class="divider"></div>
+            <button class="btn btn-primary" id="cf-play-btn" onclick="playCoinflip()">Flip Coin</button>
+          </div>
+          <div class="game-area" id="cf-game-area">
+            <div style="font-size:5rem;">&#9898;</div>
+            <p class="text-muted mt-8">Pick heads or tails and flip!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CRASH -->
+      <div class="game-panel" id="page-crash">
+        <h2 class="page-title">Crash</h2>
+        <div class="game-layout">
+          <div class="game-controls">
+            <div class="bet-input-group">
+              <label>Bet Amount</label>
+              <div class="bet-input-wrap">
+                <input type="number" id="crash-amount" min="1" value="10">
+                <div class="bet-quick-btns">
+                  <button class="bet-quick-btn" onclick="betQuick('crash-amount','half')">&#189;</button>
+                  <button class="bet-quick-btn" onclick="betQuick('crash-amount','2x')">2x</button>
+                  <button class="bet-quick-btn" onclick="betQuick('crash-amount','max')">Max</button>
+                </div>
+              </div>
+            </div>
+            <div class="bet-input-group">
+              <label>Auto Cashout (x)</label>
+              <div class="bet-input-wrap">
+                <input type="number" id="crash-auto" min="1.01" step="0.01" value="2.00" placeholder="e.g. 2.00">
+              </div>
+            </div>
+            <div class="divider"></div>
+            <button class="btn btn-primary" id="crash-play-btn" onclick="playCrash()">Place Bet</button>
+          </div>
+          <div class="game-area" id="crash-game-area">
+            <div class="crash-display" id="crash-multiplier">1.00x</div>
+            <p class="text-muted mt-8">Place a bet with auto cashout</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- MINES -->
+      <div class="game-panel" id="page-mines">
+        <h2 class="page-title">Mines</h2>
+        <div class="game-layout">
+          <div class="game-controls">
+            <div class="bet-input-group">
+              <label>Bet Amount</label>
+              <div class="bet-input-wrap">
+                <input type="number" id="mines-amount" min="1" value="10">
+                <div class="bet-quick-btns">
+                  <button class="bet-quick-btn" onclick="betQuick('mines-amount','half')">&#189;</button>
+                  <button class="bet-quick-btn" onclick="betQuick('mines-amount','2x')">2x</button>
+                  <button class="bet-quick-btn" onclick="betQuick('mines-amount','max')">Max</button>
+                </div>
+              </div>
+            </div>
+            <div class="bet-input-group">
+              <label>Mines (1-24)</label>
+              <div class="bet-input-wrap">
+                <input type="number" id="mines-count" min="1" max="24" value="3">
+              </div>
+            </div>
+            <div class="multiplier-display" id="mines-mult-display">
+              <div class="mult-label">Next Multiplier</div>
+              <div class="mult-value" id="mines-next-mult">—</div>
+            </div>
+            <div id="mines-cashout-section" class="hidden">
+              <div class="info-row">
+                <span class="label">Current Payout</span>
+                <span class="value text-accent" id="mines-current-payout">0</span>
+              </div>
+              <button class="btn btn-primary mt-8" onclick="minesCashout()">Cash Out</button>
+            </div>
+            <div class="divider"></div>
+            <button class="btn btn-primary" id="mines-start-btn" onclick="startMines()">Start Game</button>
+          </div>
+          <div class="game-area" id="mines-game-area">
+            <div class="mines-grid" id="mines-grid"></div>
+            <p class="text-muted mt-16" id="mines-status">Set mines and start!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOWERS -->
+      <div class="game-panel" id="page-towers">
+        <h2 class="page-title">Towers</h2>
+        <div class="game-layout">
+          <div class="game-controls">
+            <div class="bet-input-group">
+              <label>Bet Amount</label>
+              <div class="bet-input-wrap">
+                <input type="number" id="towers-amount" min="1" value="10">
+                <div class="bet-quick-btns">
+                  <button class="bet-quick-btn" onclick="betQuick('towers-amount','half')">&#189;</button>
+                  <button class="bet-quick-btn" onclick="betQuick('towers-amount','2x')">2x</button>
+                  <button class="bet-quick-btn" onclick="betQuick('towers-amount','max')">Max</button>
+                </div>
+              </div>
+            </div>
+            <div class="bet-input-group">
+              <label>Difficulty</label>
+              <div class="choice-group" id="towers-diff-group">
+                <button class="choice-btn selected" data-choice="easy" onclick="selectChoice('towers-diff', 'easy')">Easy</button>
+                <button class="choice-btn" data-choice="medium" onclick="selectChoice('towers-diff', 'medium')">Med</button>
+                <button class="choice-btn" data-choice="hard" onclick="selectChoice('towers-diff', 'hard')">Hard</button>
+              </div>
+            </div>
+            <div class="multiplier-display">
+              <div class="mult-label">Current Multiplier</div>
+              <div class="mult-value" id="towers-current-mult">—</div>
+            </div>
+            <div id="towers-cashout-section" class="hidden">
+              <button class="btn btn-primary" onclick="towersCashout()">Cash Out</button>
+            </div>
+            <div class="divider"></div>
+            <button class="btn btn-primary" id="towers-start-btn" onclick="startTowers()">Start Climb</button>
+          </div>
+          <div class="game-area" id="towers-game-area">
+            <div class="towers-grid" id="towers-grid"></div>
+            <p class="text-muted mt-16" id="towers-status">Pick difficulty and start!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLINKO -->
+      <div class="game-panel" id="page-plinko">
+        <h2 class="page-title">Plinko</h2>
+        <div class="game-layout">
+          <div class="game-controls">
+            <div class="bet-input-group">
+              <label>Bet Amount</label>
+              <div class="bet-input-wrap">
+                <input type="number" id="plinko-amount" min="1" value="10">
+                <div class="bet-quick-btns">
+                  <button class="bet-quick-btn" onclick="betQuick('plinko-amount','half')">&#189;</button>
+                  <button class="bet-quick-btn" onclick="betQuick('plinko-amount','2x')">2x</button>
+                  <button class="bet-quick-btn" onclick="betQuick('plinko-amount','max')">Max</button>
+                </div>
+              </div>
+            </div>
+            <div class="bet-input-group">
+              <label>Risk Level</label>
+              <div class="choice-group" id="plinko-risk-group">
+                <button class="choice-btn selected" data-choice="low" onclick="selectChoice('plinko-risk', 'low')">Low</button>
+                <button class="choice-btn" data-choice="medium" onclick="selectChoice('plinko-risk', 'medium')">Med</button>
+                <button class="choice-btn" data-choice="high" onclick="selectChoice('plinko-risk', 'high')">High</button>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <button class="btn btn-primary" onclick="playPlinko()">Drop Ball</button>
+          </div>
+          <div class="game-area" id="plinko-game-area">
+            <div class="plinko-board" id="plinko-board">
+              <div class="plinko-buckets" id="plinko-buckets"></div>
+            </div>
+            <p class="text-muted mt-16">Pick risk and drop!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROULETTE -->
+      <div class="game-panel" id="page-roulette">
+        <h2 class="page-title">Roulette</h2>
+        <div class="game-layout">
+          <div class="game-controls">
+            <div class="bet-input-group">
+              <label>Bet Amount</label>
+              <div class="bet-input-wrap">
+                <input type="number" id="rl-amount" min="1" value="10">
+                <div class="bet-quick-btns">
+                  <button class="bet-quick-btn" onclick="betQuick('rl-amount','half')">&#189;</button>
+                  <button class="bet-quick-btn" onclick="betQuick('rl-amount','2x')">2x</button>
+                  <button class="bet-quick-btn" onclick="betQuick('rl-amount','max')">Max</button>
+                </div>
+              </div>
+            </div>
+            <label style="color:var(--text-secondary);font-size:0.75rem;text-transform:uppercase;font-weight:600;margin-bottom:6px;display:block;">Pick Color</label>
+            <div class="choice-group" id="rl-choice-group">
+              <button class="choice-btn red selected" data-choice="red" onclick="selectChoice('rl', 'red')">Red (1.90x)</button>
+              <button class="choice-btn black" data-choice="black" onclick="selectChoice('rl', 'black')">Black (1.90x)</button>
+              <button class="choice-btn green" data-choice="green" onclick="selectChoice('rl', 'green')">Green (14x)</button>
+            </div>
+            <div class="divider"></div>
+            <button class="btn btn-primary" onclick="playRoulette()">Spin</button>
+          </div>
+          <div class="game-area" id="rl-game-area">
+            <div class="roulette-result-display" id="rl-display">?</div>
+            <p class="text-muted mt-8">Pick a color and spin!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- BLACKJACK -->
+      <div class="game-panel" id="page-blackjack">
+        <h2 class="page-title">Blackjack</h2>
+        <div class="game-layout">
+          <div class="game-controls">
+            <div class="bet-input-group">
+              <label>Bet Amount</label>
+              <div class="bet-input-wrap">
+                <input type="number" id="bj-amount" min="1" value="10">
+                <div class="bet-quick-btns">
+                  <button class="bet-quick-btn" onclick="betQuick('bj-amount','half')">&#189;</button>
+                  <button class="bet-quick-btn" onclick="betQuick('bj-amount','2x')">2x</button>
+                  <button class="bet-quick-btn" onclick="betQuick('bj-amount','max')">Max</button>
+                </div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <button class="btn btn-primary" id="bj-deal-btn" onclick="startBlackjack()">Deal</button>
+            <div id="bj-actions" class="bj-actions hidden">
+              <button class="btn btn-secondary btn-sm" onclick="bjAction('hit')">Hit</button>
+              <button class="btn btn-secondary btn-sm" onclick="bjAction('stand')">Stand</button>
+              <button class="btn btn-secondary btn-sm" id="bj-double-btn" onclick="bjAction('double')">Double</button>
+            </div>
+          </div>
+          <div class="game-area" id="bj-game-area">
+            <div id="bj-dealer-section" class="hidden">
+              <p class="text-muted" style="font-size:0.75rem;text-transform:uppercase;">Dealer (<span id="bj-dealer-value">0</span>)</p>
+              <div class="bj-hand" id="bj-dealer-hand"></div>
+            </div>
+            <div id="bj-player-section" class="hidden">
+              <p class="text-muted" style="font-size:0.75rem;text-transform:uppercase;">You (<span id="bj-player-value">0</span>)</p>
+              <div class="bj-hand" id="bj-player-hand"></div>
+            </div>
+            <p class="text-muted" id="bj-status">Place your bet and deal!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- BET HISTORY -->
+      <div class="game-panel" id="page-history">
+        <h2 class="page-title">Bet History</h2>
+        <div style="overflow-x:auto;">
+          <table class="history-table" id="history-table">
+            <thead>
+              <tr>
+                <th>Game</th>
+                <th>Bet</th>
+                <th>Multiplier</th>
+                <th>Payout</th>
+                <th>Result</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+          </table>
+        </div>
+        <div class="text-center mt-16" id="history-pagination"></div>
+      </div>
+
+      <!-- WITHDRAW -->
+      <div class="game-panel" id="page-withdraw">
+        <h2 class="page-title">Withdraw Gems</h2>
+        <div class="withdraw-form">
+          <div class="form-group">
+            <label>Amount</label>
+            <input type="number" id="wd-amount" min="10" placeholder="Min 10 gems">
+          </div>
+          <div class="form-group">
+            <label>Roblox Username</label>
+            <input type="text" id="wd-roblox" placeholder="Your Roblox username">
+          </div>
+          <button class="btn btn-primary" onclick="requestWithdraw()" style="width:auto;">Request Withdrawal</button>
+          <div class="divider"></div>
+          <h3 style="font-size:1rem;margin-bottom:12px;">Withdrawal History</h3>
+          <div id="wd-history"></div>
+        </div>
+      </div>
+
+      <!-- PROVABLY FAIR -->
+      <div class="game-panel" id="page-fairness">
+        <h2 class="page-title">Provably Fair</h2>
+        <div style="max-width:600px;">
+          <p class="text-secondary mb-16" style="line-height:1.6;">
+            Every game on GemRush uses a provably fair system. Before each bet, a server seed is generated and its SHA-256 hash is shown to you.
+            After the bet, the full server seed is revealed so you can verify the result was not tampered with.
+          </p>
+          <h3 style="font-size:1rem;margin-bottom:12px;">Verify a Bet</h3>
+          <div class="form-group">
+            <label>Server Seed</label>
+            <input type="text" id="pf-server-seed" placeholder="Revealed after bet">
+          </div>
+          <div class="form-group">
+            <label>Client Seed</label>
+            <input type="text" id="pf-client-seed" placeholder="Auto-generated">
+          </div>
+          <div class="form-group">
+            <label>Nonce</label>
+            <input type="number" id="pf-nonce" placeholder="Timestamp nonce">
+          </div>
+          <button class="btn btn-secondary" onclick="verifyFairness()" style="width:auto;">Verify</button>
+          <div id="pf-result" class="mt-16"></div>
+        </div>
+      </div>
+
+    </div><!-- end content-area -->
+  </div><!-- end main-content -->
+</div><!-- end app-screen -->
+
+<script src="js/api.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

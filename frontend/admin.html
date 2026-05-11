@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GemRush — Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .admin-container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .admin-header h1 { font-size: 1.5rem; }
+    .admin-tabs { display: flex; gap: 4px; margin-bottom: 24px; background: var(--bg-secondary); padding: 4px; border-radius: 10px; }
+    .admin-tab { padding: 10px 20px; border: none; background: transparent; color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; cursor: pointer; border-radius: 8px; transition: all 0.15s; }
+    .admin-tab.active { background: var(--accent); color: #000; }
+    .admin-tab:hover:not(.active) { color: var(--text-primary); }
+    .admin-section { display: none; }
+    .admin-section.active { display: block; }
+    .search-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .search-bar input { flex: 1; padding: 10px 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 0.9rem; outline: none; }
+    .search-bar input:focus { border-color: var(--accent); }
+    .player-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+    .player-row:hover { border-color: var(--accent); }
+    .player-info { display: flex; flex-direction: column; gap: 2px; }
+    .player-info .name { font-weight: 700; font-size: 0.95rem; }
+    .player-info .meta { color: var(--text-muted); font-size: 0.8rem; }
+    .player-actions { display: flex; gap: 8px; align-items: center; }
+    .player-balance { font-weight: 700; color: var(--accent); margin-right: 12px; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 200; }
+    .modal { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 100%; max-width: 440px; }
+    .modal h3 { margin-bottom: 16px; }
+    .wd-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+    .wd-row .wd-info { flex: 1; }
+    .wd-row .wd-info .wd-user { font-weight: 600; }
+    .wd-row .wd-info .wd-details { color: var(--text-muted); font-size: 0.8rem; }
+    .wd-actions { display: flex; gap: 6px; }
+  </style>
+</head>
+<body style="background: var(--bg-primary);">
+
+<!-- Admin Login -->
+<div id="admin-login" class="auth-container">
+  <div class="auth-box" style="max-width:380px;">
+    <h2 style="text-align:center;margin-bottom:16px;">Admin Panel</h2>
+    <div class="form-group">
+      <label>Admin Secret Key</label>
+      <input type="password" id="admin-key-input" placeholder="Enter admin key">
+    </div>
+    <button class="btn btn-primary" onclick="adminLogin()">Access Admin</button>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div id="admin-panel" class="hidden">
+  <div class="admin-container">
+    <div class="admin-header">
+      <h1 style="background:linear-gradient(135deg,var(--accent),#00ff88);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">GemRush Admin</h1>
+      <button class="btn btn-secondary btn-sm" onclick="adminLogout()">Logout</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="admin-stats" id="admin-stats"></div>
+
+    <!-- Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="adminTab('players')">Players</button>
+      <button class="admin-tab" onclick="adminTab('withdrawals')">Withdrawals</button>
+    </div>
+
+    <!-- Players Section -->
+    <div class="admin-section active" id="section-players">
+      <div class="search-bar">
+        <input type="text" id="player-search" placeholder="Search username or Roblox name..." oninput="searchPlayers()">
+      </div>
+      <div id="players-list"></div>
+    </div>
+
+    <!-- Withdrawals Section -->
+    <div class="admin-section" id="section-withdrawals">
+      <div id="withdrawals-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Credit/Debit Modal -->
+<div id="credit-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3 id="modal-title">Credit Gems</h3>
+    <div class="form-group">
+      <label>Amount</label>
+      <input type="number" id="modal-amount" min="1" placeholder="Amount">
+    </div>
+    <div class="form-group">
+      <label>Note</label>
+      <input type="text" id="modal-note" placeholder="e.g. Roblox deposit">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn btn-primary" style="flex:1;" id="modal-confirm-btn" onclick="confirmModal()">Confirm</button>
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = ''; // Set to your Workers URL
+let adminKey = '';
+
+function adminRequest(path, options = {}) {
+  return fetch(`${API_BASE}${path}`, {
+    method: options.method || 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Key': adminKey
+    },
+    body: options.body ? JSON.stringify(options.body) : undefined
+  }).then(r => r.json());
+}
+
+function adminLogin() {
+  adminKey = document.getElementById('admin-key-input').value;
+  if (!adminKey) return;
+  document.getElementById('admin-login').classList.add('hidden');
+  document.getElementById('admin-panel').classList.remove('hidden');
+  loadStats();
+  loadPlayers();
+}
+
+function adminLogout() {
+  adminKey = '';
+  document.getElementById('admin-login').classList.remove('hidden');
+  document.getElementById('admin-panel').classList.add('hidden');
+}
+
+function adminTab(tab) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
+  document.querySelector(`.admin-tab[onclick*="${tab}"]`).classList.add('active');
+  document.getElementById('section-' + tab).classList.add('active');
+  if (tab === 'withdrawals') loadWithdrawals();
+}
+
+async function loadStats() {
+  const data = await adminRequest('/api/admin/stats');
+  document.getElementById('admin-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Players</div><div class="stat-value">${data.totalPlayers}</div></div>
+    <div class="stat-card"><div class="stat-label">Gems in Circulation</div><div class="stat-value text-accent">${Number(data.totalBalance).toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-label">Total Wagered</div><div class="stat-value">${Number(data.totalWagered).toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-label">House Profit</div><div class="stat-value" style="color:${data.houseProfit >= 0 ? 'var(--accent)' : 'var(--danger)'}">${Number(data.houseProfit).toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-label">Today's Bets</div><div class="stat-value">${data.todayBets}</div></div>
+    <div class="stat-card"><div class="stat-label">Pending Withdrawals</div><div class="stat-value" style="color:var(--warning)">${data.pendingWithdrawals}</div></div>
+  `;
+}
+
+let searchTimeout;
+function searchPlayers() {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => loadPlayers(), 300);
+}
+
+async function loadPlayers() {
+  const search = document.getElementById('player-search').value;
+  const data = await adminRequest(`/api/admin/players?search=${encodeURIComponent(search)}`);
+  const list = document.getElementById('players-list');
+
+  if (!data.players || data.players.length === 0) {
+    list.innerHTML = '<p class="text-muted text-center" style="padding:40px;">No players found</p>';
+    return;
+  }
+
+  list.innerHTML = data.players.map(p => `
+    <div class="player-row">
+      <div class="player-info">
+        <span class="name">${p.username} ${p.is_banned ? '(BANNED)' : ''}</span>
+        <span class="meta">Roblox: ${p.roblox_username || 'N/A'} | Wagered: ${Number(p.total_wagered).toLocaleString()} | Won: ${Number(p.total_won).toLocaleString()}</span>
+      </div>
+      <div class="player-actions">
+        <span class="player-balance">${Number(p.balance).toLocaleString()} gems</span>
+        <button class="btn btn-sm btn-primary" onclick="openCredit('${p.id}', '${p.username}')">Credit</button>
+        <button class="btn btn-sm btn-danger" onclick="openDebit('${p.id}', '${p.username}')">Debit</button>
+        <button class="btn btn-sm btn-secondary" onclick="toggleBan('${p.id}', ${!p.is_banned})">${p.is_banned ? 'Unban' : 'Ban'}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+let modalAction = '';
+let modalUserId = '';
+
+function openCredit(userId, username) {
+  modalAction = 'credit';
+  modalUserId = userId;
+  document.getElementById('modal-title').textContent = `Credit Gems to ${username}`;
+  document.getElementById('modal-amount').value = '';
+  document.getElementById('modal-note').value = '';
+  document.getElementById('credit-modal').classList.remove('hidden');
+}
+
+function openDebit(userId, username) {
+  modalAction = 'debit';
+  modalUserId = userId;
+  document.getElementById('modal-title').textContent = `Debit Gems from ${username}`;
+  document.getElementById('modal-amount').value = '';
+  document.getElementById('modal-note').value = '';
+  document.getElementById('credit-modal').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('credit-modal').classList.add('hidden');
+}
+
+async function confirmModal() {
+  const amount = parseInt(document.getElementById('modal-amount').value);
+  const note = document.getElementById('modal-note').value;
+  if (!amount || amount < 1) return alert('Enter a valid amount');
+
+  const endpoint = modalAction === 'credit' ? '/api/admin/credit' : '/api/admin/debit';
+  const res = await adminRequest(endpoint, {
+    method: 'POST',
+    body: { userId: modalUserId, amount, note }
+  });
+
+  if (res.error) {
+    alert(res.error);
+  } else {
+    closeModal();
+    loadPlayers();
+    loadStats();
+  }
+}
+
+async function toggleBan(userId, ban) {
+  if (!confirm(`Are you sure you want to ${ban ? 'ban' : 'unban'} this player?`)) return;
+  await adminRequest('/api/admin/ban', { method: 'POST', body: { userId, banned: ban } });
+  loadPlayers();
+}
+
+async function loadWithdrawals() {
+  const data = await adminRequest('/api/admin/withdrawals?status=all');
+  const list = document.getElementById('withdrawals-list');
+
+  if (!data.withdrawals || data.withdrawals.length === 0) {
+    list.innerHTML = '<p class="text-muted text-center" style="padding:40px;">No withdrawals</p>';
+    return;
+  }
+
+  list.innerHTML = data.withdrawals.map(w => `
+    <div class="wd-row">
+      <div class="wd-info">
+        <span class="wd-user">${w.players?.username || 'Unknown'}</span>
+        <span class="wd-details">${w.amount} gems to ${w.roblox_username} | ${new Date(w.created_at).toLocaleDateString()} | Status: <strong>${w.status}</strong></span>
+      </div>
+      ${w.status === 'pending' ? `
+        <div class="wd-actions">
+          <button class="btn btn-sm btn-primary" onclick="actionWithdrawal('${w.id}', 'approve')">Approve</button>
+          <button class="btn btn-sm btn-danger" onclick="actionWithdrawal('${w.id}', 'reject')">Reject</button>
+        </div>
+      ` : ''}
+    </div>
+  `).join('');
+}
+
+async function actionWithdrawal(id, action) {
+  const note = prompt(`Note for ${action}:`) || '';
+  await adminRequest(`/api/admin/withdrawal/${id}`, {
+    method: 'POST',
+    body: { action, note }
+  });
+  loadWithdrawals();
+  loadStats();
+}
+</script>
+</body>
+</html>

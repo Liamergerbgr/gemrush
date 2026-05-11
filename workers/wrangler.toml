@@ -1,0 +1,10 @@
+name = "gemrush-api"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+# Set these in Cloudflare dashboard or via wrangler secret
+# SUPABASE_URL = "https://your-project.supabase.co"
+# SUPABASE_SERVICE_KEY = "your-service-role-key"
+# ADMIN_SECRET_KEY = "your-admin-secret"
+# JWT_SECRET = "your-supabase-jwt-secret"
