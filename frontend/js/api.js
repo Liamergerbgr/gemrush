@@ -4,14 +4,23 @@ const API_BASE = 'https://gemrush-api.taskautomateai.workers.dev';
 class GemRushAPI {
   constructor() {
     this.token = localStorage.getItem('gr_token');
+    this.refreshToken = localStorage.getItem('gr_refresh_token');
   }
 
-  setToken(token) {
+  setToken(token, refreshToken) {
     this.token = token;
     if (token) {
       localStorage.setItem('gr_token', token);
     } else {
       localStorage.removeItem('gr_token');
+    }
+    if (refreshToken !== undefined) {
+      this.refreshToken = refreshToken;
+      if (refreshToken) {
+        localStorage.setItem('gr_refresh_token', refreshToken);
+      } else {
+        localStorage.removeItem('gr_refresh_token');
+      }
     }
   }
 
@@ -20,15 +29,47 @@ class GemRushAPI {
     if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
     if (options.adminKey) headers['X-Admin-Key'] = options.adminKey;
 
-    const res = await fetch(`${API_BASE}${path}`, {
+    let res = await fetch(`${API_BASE}${path}`, {
       method: options.method || 'GET',
       headers,
       body: options.body ? JSON.stringify(options.body) : undefined
     });
 
+    // If 401 and we have a refresh token, try refreshing
+    if (res.status === 401 && this.refreshToken && !options._isRetry) {
+      const refreshed = await this.tryRefresh();
+      if (refreshed) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+        res = await fetch(`${API_BASE}${path}`, {
+          method: options.method || 'GET',
+          headers,
+          body: options.body ? JSON.stringify(options.body) : undefined
+        });
+      }
+    }
+
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Request failed');
     return data;
+  }
+
+  async tryRefresh() {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: this.refreshToken })
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      this.setToken(data.token, data.refreshToken);
+      if (data.user) {
+        localStorage.setItem('gr_user', JSON.stringify(data.user));
+      }
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // Auth
@@ -37,7 +78,7 @@ class GemRushAPI {
       method: 'POST',
       body: { email, password, username, roblox_username }
     });
-    this.setToken(data.token);
+    this.setToken(data.token, data.refreshToken);
     return data;
   }
 
@@ -46,12 +87,12 @@ class GemRushAPI {
       method: 'POST',
       body: { email, password }
     });
-    this.setToken(data.token);
+    this.setToken(data.token, data.refreshToken);
     return data;
   }
 
   logout() {
-    this.setToken(null);
+    this.setToken(null, null);
     localStorage.removeItem('gr_user');
   }
 

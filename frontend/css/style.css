@@ -781,6 +781,16 @@ body {
 .tower-col.danger { background: var(--danger-dim); border-color: var(--danger); }
 .tower-col.current-row { border-color: var(--warning); box-shadow: 0 0 10px rgba(255,184,0,0.2); }
 
+.tower-col .tower-mult {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.towers-potential-win {
+  margin: 4px 0;
+}
+
 /* Crash */
 .crash-display {
   font-size: 4.5rem;
@@ -795,8 +805,44 @@ body {
 /* Plinko */
 .plinko-board {
   position: relative;
-  max-width: 500px;
+  max-width: 520px;
   width: 100%;
+}
+
+.plinko-pegs {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.plinko-peg-row {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+}
+
+.plinko-peg {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  margin: 4px 10px;
+  flex-shrink: 0;
+}
+
+.plinko-ball {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+  z-index: 10;
+  pointer-events: none;
+  transition: none;
 }
 
 .plinko-buckets {
@@ -814,6 +860,16 @@ body {
   min-width: 34px;
   transition: all 0.3s;
   border: 1px solid transparent;
+}
+
+.plinko-bucket.hit {
+  animation: bucketHit 0.5s ease;
+}
+
+@keyframes bucketHit {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.25); }
+  100% { transform: scale(1); }
 }
 
 /* Blackjack */
@@ -854,27 +910,89 @@ body {
   margin-top: 16px;
 }
 
-/* Roulette */
-.roulette-result-display {
-  width: 130px;
-  height: 130px;
-  border-radius: 50%;
+/* Roulette Strip */
+.roulette-strip-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  height: 90px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+}
+
+.roulette-pointer {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 100%;
+  background: var(--accent);
+  z-index: 10;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.roulette-pointer::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 10px solid var(--accent);
+}
+
+.roulette-strip {
+  display: flex;
+  gap: 4px;
+  padding: 8px 4px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  align-items: center;
+  transition: none;
+}
+
+.roulette-strip.spinning {
+  transition: transform 4s cubic-bezier(0.15, 0.8, 0.3, 1);
+}
+
+.rl-block {
+  width: 70px;
+  height: 70px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
-  font-weight: 900;
-  margin: 24px auto;
-  border: 4px solid var(--border);
-  box-shadow: var(--shadow-md);
-  transition: all 0.3s;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+  font-weight: 800;
+  font-size: 0.75rem;
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
 }
 
-.roulette-result-display.red-result { background: rgba(255,71,87,0.15); border-color: #ff4757; color: #ff4757; box-shadow: 0 0 25px rgba(255,71,87,0.2); }
-.roulette-result-display.black-result { background: rgba(120,120,120,0.2); border-color: #888; color: #fff; }
-.roulette-result-display.green-result { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); box-shadow: 0 0 25px var(--accent-dim); }
+.rl-block .rl-block-mult {
+  font-size: 0.65rem;
+  opacity: 0.7;
+}
+
+.rl-block.red { background: rgba(255,71,87,0.2); color: #ff4757; border-color: rgba(255,71,87,0.3); }
+.rl-block.black { background: rgba(80,80,100,0.3); color: #ccc; border-color: rgba(120,120,140,0.3); }
+.rl-block.green { background: rgba(0,231,1,0.12); color: var(--accent); border-color: rgba(0,231,1,0.25); }
+
+.rl-block.winner {
+  border-color: #fff;
+  box-shadow: 0 0 20px rgba(255,255,255,0.2);
+  transform: scale(1.05);
+}
 
 /* ============================================================
    INFO / MULTIPLIER

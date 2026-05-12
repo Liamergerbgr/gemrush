@@ -111,6 +111,9 @@
       <div class="nav-item" data-page="fairness" onclick="navigate('fairness')">
         <span class="icon">&#128274;</span> Provably Fair
       </div>
+      <div class="nav-item" id="admin-nav-item" style="display:none;color:var(--gold);" onclick="window.open('admin.html','_blank')">
+        <span class="icon">&#9881;</span> Admin Panel
+      </div>
       <div class="nav-item" onclick="doLogout()" style="color:var(--danger)">
         <span class="icon">&#10005;</span> Logout
       </div>
@@ -350,8 +353,18 @@
               <div class="mult-label">Current Multiplier</div>
               <div class="mult-value" id="towers-current-mult">—</div>
             </div>
+            <div id="towers-potential-win" class="towers-potential-win">
+              <div class="info-row">
+                <span class="label">Potential Win (Floor 1)</span>
+                <span class="value text-accent" id="towers-win-preview">—</span>
+              </div>
+            </div>
             <div id="towers-cashout-section" class="hidden">
-              <button class="btn btn-primary" onclick="towersCashout()">Cash Out</button>
+              <div class="info-row">
+                <span class="label">Current Payout</span>
+                <span class="value text-accent" id="towers-current-payout">0</span>
+              </div>
+              <button class="btn btn-primary mt-8" onclick="towersCashout()">Cash Out</button>
             </div>
             <div class="divider"></div>
             <button class="btn btn-primary" id="towers-start-btn" onclick="startTowers()">Start Climb</button>
@@ -392,9 +405,9 @@
           </div>
           <div class="game-area" id="plinko-game-area">
             <div class="plinko-board" id="plinko-board">
+              <div class="plinko-pegs" id="plinko-pegs"></div>
               <div class="plinko-buckets" id="plinko-buckets"></div>
             </div>
-            <p class="text-muted mt-16">Pick risk and drop!</p>
           </div>
         </div>
       </div>
@@ -425,8 +438,11 @@
             <button class="btn btn-primary" onclick="playRoulette()">Spin</button>
           </div>
           <div class="game-area" id="rl-game-area">
-            <div class="roulette-result-display" id="rl-display">?</div>
-            <p class="text-muted mt-8">Pick a color and spin!</p>
+            <div class="roulette-strip-container">
+              <div class="roulette-pointer"></div>
+              <div class="roulette-strip" id="rl-strip"></div>
+            </div>
+            <p class="text-muted mt-16" id="rl-status">Pick a color and spin!</p>
           </div>
         </div>
       </div>

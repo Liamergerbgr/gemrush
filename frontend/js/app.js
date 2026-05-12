@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentUser = JSON.parse(savedUser);
       api.token = token;
       const me = await api.getMe();
-      currentUser = { ...currentUser, ...me };
+      currentUser = { ...currentUser, ...me, isAdmin: me.isAdmin || false };
       userBalance = me.balance || 0;
       // If logged in but on auth page, redirect to home
       if (AUTH_PAGES.includes(initialPage)) {
@@ -56,8 +56,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     showAuth(initialPage);
   }
 
-  renderPlinkoBuckets();
+  renderPlinkoBoard();
   renderMinesGrid();
+  buildRouletteStrip();
+  updateTowersPreview();
 });
 
 // Handle browser back/forward buttons
@@ -94,6 +96,11 @@ function showApp() {
   updateBalance(userBalance);
   document.getElementById('user-name').textContent = currentUser?.username || 'User';
   document.getElementById('user-avatar').textContent = (currentUser?.username || '?')[0].toUpperCase();
+  // Show admin link if admin
+  const adminLink = document.getElementById('admin-nav-item');
+  if (adminLink) {
+    adminLink.style.display = currentUser?.isAdmin ? 'flex' : 'none';
+  }
   // If on an auth URL, redirect to home
   const page = getPageFromURL();
   if (AUTH_PAGES.includes(page)) {
@@ -421,6 +428,63 @@ async function minesCashout() {
 }
 
 // --- Towers ---
+const TOWER_CONFIGS = {
+  easy:   { columns: 3, safe: 2, floors: 10 },
+  medium: { columns: 3, safe: 1, floors: 8 },
+  hard:   { columns: 4, safe: 1, floors: 7 }
+};
+
+function towerFloorMult(columns, safe) {
+  return 0.95 * (columns / safe);
+}
+
+function towerCumulMult(columns, safe, floorsClimbed) {
+  return Math.floor(Math.pow(towerFloorMult(columns, safe), floorsClimbed) * 100) / 100;
+}
+
+function updateTowersPreview() {
+  const config = TOWER_CONFIGS[towersDiff];
+  const amount = parseInt(document.getElementById('towers-amount').value) || 0;
+  const firstMult = towerCumulMult(config.columns, config.safe, 1);
+  const winEl = document.getElementById('towers-win-preview');
+  const potEl = document.getElementById('towers-potential-win');
+  if (winEl) {
+    if (amount > 0) {
+      winEl.textContent = Math.floor(amount * firstMult) + ' gems (' + firstMult + 'x)';
+    } else {
+      winEl.textContent = firstMult + 'x';
+    }
+  }
+  if (potEl) {
+    const label = potEl.querySelector('.label');
+    if (label) label.textContent = 'Potential Win (Floor 1)';
+  }
+  // Render preview grid if no active game
+  if (!towersGameId) {
+    renderTowersPreviewGrid(config.columns, config.floors, config.safe);
+  }
+}
+
+function renderTowersPreviewGrid(columns, floors, safe) {
+  const grid = document.getElementById('towers-grid');
+  grid.innerHTML = '';
+
+  for (let f = 0; f < floors; f++) {
+    const row = document.createElement('div');
+    row.className = 'tower-row';
+    const mult = towerCumulMult(columns, safe, f + 1);
+
+    for (let c = 0; c < columns; c++) {
+      const col = document.createElement('div');
+      col.className = 'tower-col';
+      col.innerHTML = `<span class="tower-mult">${mult}x</span>`;
+      row.appendChild(col);
+    }
+
+    grid.appendChild(row);
+  }
+}
+
 async function startTowers() {
   const amount = parseInt(document.getElementById('towers-amount').value);
   if (!amount || amount < 1) return toast('Enter a valid bet', 'error');
@@ -433,6 +497,8 @@ async function startTowers() {
     document.getElementById('towers-current-mult').textContent = '1.00x';
     document.getElementById('towers-start-btn').classList.add('hidden');
     document.getElementById('towers-cashout-section').classList.remove('hidden');
+    document.getElementById('towers-potential-win').classList.add('hidden');
+    document.getElementById('towers-current-payout').textContent = '0';
     document.getElementById('towers-status').textContent = 'Pick a column on the highlighted floor!';
   } catch (e) {
     toast(e.message, 'error');
@@ -442,29 +508,34 @@ async function startTowers() {
 function renderTowersGrid(columns, floors, currentFloor, tower = null) {
   const grid = document.getElementById('towers-grid');
   grid.innerHTML = '';
+  const config = TOWER_CONFIGS[towersDiff];
 
   for (let f = 0; f < floors; f++) {
     const row = document.createElement('div');
     row.className = 'tower-row';
+    const mult = towerCumulMult(config.columns, config.safe, f + 1);
 
     for (let c = 0; c < columns; c++) {
       const col = document.createElement('div');
       col.className = 'tower-col';
 
-      if (f === currentFloor && towersGameId) {
-        col.classList.add('current-row');
-        col.onclick = () => pickTower(c);
-      }
-
-      if (tower && f < currentFloor) {
-        // Show past results
-        if (tower[f].dangerous.includes(c)) {
-          col.classList.add('danger');
-          col.innerHTML = '&#10005;';
-        } else {
-          col.classList.add('safe');
-          col.innerHTML = '&#10003;';
+      if (tower && f < (tower.length)) {
+        if (f < currentFloor || (tower === null ? false : true)) {
+          // Show past results
+          if (tower[f].dangerous.includes(c)) {
+            col.classList.add('danger');
+            col.innerHTML = '&#10005;';
+          } else {
+            col.classList.add('safe');
+            col.innerHTML = '&#10003;';
+          }
         }
+      } else if (f === currentFloor && towersGameId) {
+        col.classList.add('current-row');
+        col.innerHTML = `<span class="tower-mult">${mult}x</span>`;
+        col.onclick = () => pickTower(c);
+      } else {
+        col.innerHTML = `<span class="tower-mult">${mult}x</span>`;
       }
 
       row.appendChild(col);
@@ -477,30 +548,39 @@ function renderTowersGrid(columns, floors, currentFloor, tower = null) {
 async function pickTower(column) {
   if (!towersGameId) return;
 
+  const config = TOWER_CONFIGS[towersDiff];
+
   try {
     const res = await api.towersPick(towersGameId, column);
 
     if (res.result === 'dead') {
-      renderTowersGrid(res.tower[0]?.dangerous?.length ? 3 : 4, res.tower.length, res.tower.length, res.tower);
+      const cols = res.tower[0]?.dangerous?.length === 1 && res.tower.length <= 7 ? 4 : 3;
+      renderTowersGrid(cols, res.tower.length, res.tower.length, res.tower);
       updateBalance(res.balance);
       towersGameId = null;
       document.getElementById('towers-start-btn').classList.remove('hidden');
       document.getElementById('towers-cashout-section').classList.add('hidden');
+      document.getElementById('towers-potential-win').classList.remove('hidden');
       document.getElementById('towers-status').textContent = 'You fell!';
       toast('You fell!', 'error');
+      updateTowersPreview();
     } else if (res.reachedTop) {
-      renderTowersGrid(res.tower[0]?.dangerous?.length ? 3 : 4, res.tower.length, res.tower.length, res.tower);
+      const cols = res.tower[0]?.dangerous?.length === 1 && res.tower.length <= 7 ? 4 : 3;
+      renderTowersGrid(cols, res.tower.length, res.tower.length, res.tower);
       updateBalance(res.balance);
       towersGameId = null;
       document.getElementById('towers-start-btn').classList.remove('hidden');
       document.getElementById('towers-cashout-section').classList.add('hidden');
+      document.getElementById('towers-potential-win').classList.remove('hidden');
       document.getElementById('towers-current-mult').textContent = res.multiplier + 'x';
       toast(`Reached the top! ${res.multiplier}x — +${res.payout} gems!`);
+      updateTowersPreview();
     } else {
       document.getElementById('towers-current-mult').textContent = res.currentMultiplier + 'x';
+      document.getElementById('towers-current-payout').textContent = res.currentPayout + ' gems';
       // Re-render with updated floor
       const floors = res.floorsLeft + res.currentFloor;
-      renderTowersGrid(3, floors, res.currentFloor);
+      renderTowersGrid(config.columns, floors, res.currentFloor);
     }
   } catch (e) {
     toast(e.message, 'error');
@@ -515,8 +595,10 @@ async function towersCashout() {
     towersGameId = null;
     document.getElementById('towers-start-btn').classList.remove('hidden');
     document.getElementById('towers-cashout-section').classList.add('hidden');
+    document.getElementById('towers-potential-win').classList.remove('hidden');
     document.getElementById('towers-current-mult').textContent = res.multiplier + 'x';
     toast(`Cashed out ${res.multiplier}x! +${res.payout} gems`);
+    updateTowersPreview();
   } catch (e) {
     toast(e.message, 'error');
   }
@@ -528,6 +610,29 @@ const PLINKO_MULTS = {
   medium: [25, 8, 3, 1.5, 1.1, 0.5, 0.3, 0.5, 1.1, 1.5, 3, 8, 25],
   high: [110, 41, 10, 5, 3, 1.5, 1, 0.5, 0.3, 0.5, 1, 1.5, 3, 5, 10, 41, 110]
 };
+
+const PLINKO_ROWS = { low: 8, medium: 12, high: 16 };
+
+function renderPlinkoBoard() {
+  const pegsContainer = document.getElementById('plinko-pegs');
+  if (!pegsContainer) return;
+  pegsContainer.innerHTML = '';
+
+  const rows = PLINKO_ROWS[plinkoRisk];
+  for (let r = 0; r < rows; r++) {
+    const row = document.createElement('div');
+    row.className = 'plinko-peg-row';
+    const pegsInRow = r + 2;
+    for (let p = 0; p < pegsInRow; p++) {
+      const peg = document.createElement('div');
+      peg.className = 'plinko-peg';
+      row.appendChild(peg);
+    }
+    pegsContainer.appendChild(row);
+  }
+
+  renderPlinkoBuckets();
+}
 
 function renderPlinkoBuckets() {
   const buckets = document.getElementById('plinko-buckets');
@@ -545,6 +650,79 @@ function renderPlinkoBuckets() {
   });
 }
 
+function animatePlinkoBall(path, bucket, callback) {
+  const pegsContainer = document.getElementById('plinko-pegs');
+  const board = document.getElementById('plinko-board');
+  if (!pegsContainer || !board) { callback(); return; }
+
+  const rows = pegsContainer.querySelectorAll('.plinko-peg-row');
+  if (rows.length === 0) { callback(); return; }
+
+  const ball = document.createElement('div');
+  ball.className = 'plinko-ball';
+  board.style.position = 'relative';
+  board.appendChild(ball);
+
+  // Calculate peg positions relative to board
+  const boardRect = board.getBoundingClientRect();
+  const pegPositions = [];
+
+  // Starting position — above first row, center
+  const firstRow = rows[0];
+  const firstRowRect = firstRow.getBoundingClientRect();
+  const startX = firstRowRect.left + firstRowRect.width / 2 - boardRect.left - 7;
+  const startY = firstRowRect.top - boardRect.top - 20;
+  pegPositions.push({ x: startX, y: startY });
+
+  // For each row, compute where ball goes based on path
+  let position = 0; // which "slot" the ball is in (0 = leftmost)
+  for (let r = 0; r < path.length; r++) {
+    position += path[r]; // 0 = left, 1 = right
+    const row = rows[r];
+    if (!row) break;
+    const pegs = row.querySelectorAll('.plinko-peg');
+    // Ball position is between peg[position] and peg[position] based on direction
+    const targetPeg = pegs[position];
+    if (!targetPeg) break;
+    const pegRect = targetPeg.getBoundingClientRect();
+    const x = pegRect.left + pegRect.width / 2 - boardRect.left - 7;
+    const y = pegRect.top + pegRect.height / 2 - boardRect.top - 7;
+    pegPositions.push({ x, y });
+  }
+
+  // Add bucket final position
+  const bucketEls = document.querySelectorAll('#plinko-buckets .plinko-bucket');
+  if (bucketEls[bucket]) {
+    const bRect = bucketEls[bucket].getBoundingClientRect();
+    pegPositions.push({
+      x: bRect.left + bRect.width / 2 - boardRect.left - 7,
+      y: bRect.top - boardRect.top - 5
+    });
+  }
+
+  let step = 0;
+  ball.style.left = pegPositions[0].x + 'px';
+  ball.style.top = pegPositions[0].y + 'px';
+
+  function nextStep() {
+    step++;
+    if (step >= pegPositions.length) {
+      setTimeout(() => {
+        ball.remove();
+        callback();
+      }, 300);
+      return;
+    }
+    ball.style.transition = 'left 0.12s ease-in, top 0.12s ease-in';
+    ball.style.left = pegPositions[step].x + 'px';
+    ball.style.top = pegPositions[step].y + 'px';
+    setTimeout(nextStep, 130);
+  }
+  setTimeout(nextStep, 50);
+}
+
+let plinkoDropping = false;
+
 async function playPlinko() {
   const amount = parseInt(document.getElementById('plinko-amount').value);
   if (!amount || amount < 1) return toast('Enter a valid bet', 'error');
@@ -553,55 +731,123 @@ async function playPlinko() {
     const res = await api.plinkoDrop(amount, plinkoRisk);
     updateBalance(res.balance);
 
-    // Highlight bucket
-    renderPlinkoBuckets();
-    const bucketEls = document.querySelectorAll('#plinko-buckets .plinko-bucket');
-    if (bucketEls[res.bucket]) {
-      bucketEls[res.bucket].style.background = res.won ? 'var(--accent)' : 'var(--danger)';
-      bucketEls[res.bucket].style.color = '#000';
-      bucketEls[res.bucket].style.transform = 'scale(1.2)';
-      bucketEls[res.bucket].style.fontWeight = '800';
-    }
+    animatePlinkoBall(res.path, res.bucket, () => {
+      // Highlight bucket
+      const bucketEls = document.querySelectorAll('#plinko-buckets .plinko-bucket');
+      if (bucketEls[res.bucket]) {
+        bucketEls[res.bucket].classList.add('hit');
+        bucketEls[res.bucket].style.background = res.won ? 'var(--accent)' : 'var(--danger)';
+        bucketEls[res.bucket].style.color = '#000';
+        // Reset after a moment
+        setTimeout(() => {
+          bucketEls[res.bucket].classList.remove('hit');
+          renderPlinkoBuckets();
+        }, 2000);
+      }
 
-    if (res.payout > amount) {
-      toast(`${res.multiplier}x! +${res.payout} gems`);
-    } else if (res.payout > 0) {
-      toast(`${res.multiplier}x — ${res.payout} gems returned`, 'error');
-    } else {
-      toast(`Lost! 0x`, 'error');
-    }
+      if (res.payout > amount) {
+        toast(`${res.multiplier}x! +${res.payout} gems`);
+      } else if (res.payout > 0) {
+        toast(`${res.multiplier}x — ${res.payout} gems returned`, 'error');
+      } else {
+        toast(`Lost! 0x`, 'error');
+      }
+    });
   } catch (e) {
     toast(e.message, 'error');
   }
 }
 
 // --- Roulette ---
+// American roulette layout: 38 slots
+const ROULETTE_SEQUENCE = [];
+(function buildRouletteSequence() {
+  // Build a repeating strip: 18 red, 18 black, 2 green spread naturally
+  // Using American roulette wheel order approximation
+  const order = [
+    'green','red','black','red','black','red','black','red','black','red','black',
+    'black','red','black','red','black','red','black','red',
+    'green','red','black','red','black','red','black','red','black','red','black',
+    'black','red','black','red','black','red','black','red'
+  ];
+  for (let i = 0; i < order.length; i++) ROULETTE_SEQUENCE.push(order[i]);
+})();
+
+function buildRouletteStrip() {
+  const strip = document.getElementById('rl-strip');
+  strip.innerHTML = '';
+  strip.style.transform = 'translateX(0)';
+  strip.classList.remove('spinning');
+
+  // Build 80 blocks (enough to scroll through)
+  const totalBlocks = 80;
+  for (let i = 0; i < totalBlocks; i++) {
+    const color = ROULETTE_SEQUENCE[i % ROULETTE_SEQUENCE.length];
+    const block = document.createElement('div');
+    block.className = 'rl-block ' + color;
+    const label = color === 'green' ? 'GREEN' : color.toUpperCase();
+    const mult = color === 'green' ? '14x' : '1.90x';
+    block.innerHTML = `<span>${label}</span><span class="rl-block-mult">${mult}</span>`;
+    block.dataset.index = i;
+    strip.appendChild(block);
+  }
+}
+
 async function playRoulette() {
   const amount = parseInt(document.getElementById('rl-amount').value);
   if (!amount || amount < 1) return toast('Enter a valid bet', 'error');
+
+  const strip = document.getElementById('rl-strip');
+  const container = strip.parentElement;
+  const statusEl = document.getElementById('rl-status');
+
+  // Reset strip
+  buildRouletteStrip();
+
+  statusEl.textContent = 'Spinning...';
 
   try {
     const res = await api.rouletteBet(amount, rlChoice);
     updateBalance(res.balance);
 
-    const display = document.getElementById('rl-display');
-    display.className = 'roulette-result-display ' + res.result + '-result';
-    display.textContent = res.result.toUpperCase();
+    // Find the target block index (we want the winning color to land under pointer)
+    // We need to scroll so the winning slot ends up at center
+    const blockWidth = 74; // 70px + 4px gap
+    const containerCenter = container.offsetWidth / 2;
 
-    const area = document.getElementById('rl-game-area');
-    const resultHTML = res.won
-      ? `<p class="text-accent mt-8" style="font-size:1.2rem;font-weight:700;">${res.multiplier}x — +${res.payout} gems!</p>`
-      : `<p class="text-danger mt-8" style="font-size:1.2rem;font-weight:700;">Lost! Result: ${res.result}</p>`;
+    // Pick a target block far enough into the strip that we get a good spin
+    // Find blocks matching the result color, pick one around index 55-65
+    const blocks = strip.querySelectorAll('.rl-block');
+    let targetIdx = 55;
+    for (let i = 50; i < 70; i++) {
+      if (ROULETTE_SEQUENCE[i % ROULETTE_SEQUENCE.length] === res.result) {
+        targetIdx = i;
+        break;
+      }
+    }
 
-    // Keep display, append result
-    const existing = area.querySelector('.rl-result-text');
-    if (existing) existing.remove();
-    const div = document.createElement('div');
-    div.className = 'rl-result-text';
-    div.innerHTML = resultHTML;
-    area.appendChild(div);
+    const targetOffset = (targetIdx * blockWidth) + (blockWidth / 2) - containerCenter;
+
+    // Animate
+    requestAnimationFrame(() => {
+      strip.classList.add('spinning');
+      strip.style.transform = `translateX(-${targetOffset}px)`;
+    });
+
+    // After animation, highlight winner
+    setTimeout(() => {
+      blocks[targetIdx]?.classList.add('winner');
+      if (res.won) {
+        statusEl.innerHTML = `<span class="text-accent" style="font-weight:700;font-size:1.1rem;">${res.multiplier}x — +${res.payout} gems!</span>`;
+        toast(`${res.multiplier}x! +${res.payout} gems`);
+      } else {
+        statusEl.innerHTML = `<span class="text-danger" style="font-weight:700;font-size:1.1rem;">Lost! Landed on ${res.result}</span>`;
+        toast(`Landed on ${res.result}`, 'error');
+      }
+    }, 4200);
   } catch (e) {
     toast(e.message, 'error');
+    statusEl.textContent = 'Pick a color and spin!';
   }
 }
 
@@ -826,11 +1072,18 @@ async function verifyFairness() {
   }
 }
 
-// Watch risk level changes for plinko
-const origSelectChoice = selectChoice;
+// Watch choice changes to re-render visuals
 const _selectChoice = selectChoice;
-// Override to also re-render plinko buckets
 window.selectChoice = function(group, choice) {
   _selectChoice(group, choice);
-  if (group === 'plinko-risk') renderPlinkoBuckets();
+  if (group === 'plinko-risk') renderPlinkoBoard();
+  if (group === 'towers-diff') updateTowersPreview();
 };
+
+// Watch towers bet amount changes for potential win preview
+document.addEventListener('DOMContentLoaded', () => {
+  const towersInput = document.getElementById('towers-amount');
+  if (towersInput) {
+    towersInput.addEventListener('input', updateTowersPreview);
+  }
+});
